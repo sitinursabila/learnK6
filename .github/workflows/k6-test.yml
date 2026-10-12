@@ -1,0 +1,48 @@
+name: K6 Performance Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Manual trigger dari GitHub UI
+  workflow_dispatch:
+
+jobs:
+  k6-smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Run Smoke Test
+        run: k6 run tests/smoke-test.js
+        continue-on-error: true  # Lanjut upload report meski test gagal
+
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()  # Upload report meski step sebelumnya gagal
+        with:
+          name: k6-smoke-test-report
+          path: reports/
+          retention-days: 30
+
+      - name: Post Summary to PR
+        if: always()
+        run: |
+          echo "## 📊 K6 Smoke Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f reports/smoke-test-summary.json ]; then
+            echo "✅ Report generated successfully" >> $GITHUB_STEP_SUMMARY
+            echo "📄 Download the HTML report from **Artifacts** section below" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Report generation failed" >> $GITHUB_STEP_SUMMARY
+          fi

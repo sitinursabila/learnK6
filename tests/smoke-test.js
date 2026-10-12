@@ -2,6 +2,7 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { login, logout } from '../helpers/auth.js';
 import { BASE_URL, API_BASE, DEFAULT_THRESHOLDS, JSON_HEADERS } from '../config.js';
+import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js";
 
 export const options = {
   vus: 1,
@@ -46,4 +47,11 @@ export default function () {
     logout();
     sleep(1);
   });
+}
+
+export function handleSummary(data) {
+  return {
+    "reports/smoke-test-report.html": htmlReport(data),
+    "reports/smoke-test-summary.json": JSON.stringify(data, null, 2),
+  };
 }
